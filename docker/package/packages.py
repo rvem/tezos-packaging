@@ -82,6 +82,20 @@ for network in networks:
     node_units.append(SystemdUnit(suffix=network,
                                   service_file=service_file,
                                   startup_script="tezos-node-start"))
+
+node_units.append(SystemdUnit(suffix="custom",
+                              service_file=ServiceFile(
+                                  Unit(after=["network.target"], requires=[],
+                                       description=f"Tezos node with custom config"),
+                                  Service(environment=[
+                                      "DATA_DIR=/var/lib/tezos/node-custom",
+                                      "NODE_RPC_ADDR=127.0.0.1:8732",
+                                      "CERT_PATH=", "KEY_PATH=",
+                                      "CUSTOM_NODE_CONFIG="],
+                                          exec_start="/usr/bin/tezos-node-start",
+                                          state_directory="tezos", user="tezos")),
+                              startup_script="tezos-node-start"))
+
 packages.append(Package("tezos-node",
                         "Entry point for initializing, configuring and running a Tezos node",
                         node_units))
