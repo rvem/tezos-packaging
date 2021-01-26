@@ -6,8 +6,9 @@
 # Baking with tezos-packaging on Ubuntu
 
 Tezos-packaging provides an easy way to install and set up infrastructure for
-interacting with Tezos blockchain. This article provides a step-by-step guide for
-setting up baking instance for Tezos on Ubuntu.
+interacting with Tezos blockchain.
+
+This article provides a step-by-step guide for setting up baking instance for Tezos on Ubuntu.
 
 ## Prerequisites
 
@@ -26,17 +27,18 @@ sudo apt-get install tezos-client tezos-node tezos-baker-<proto> tezos-endorser-
 ```
 
 Packages for `tezos-node`, `tezos-baker-<proto>` and `tezos-endorser-<proto>` provide
-systemd units for running the corresponding binaries in the background
+systemd units for running the corresponding binaries in the background.
 
 ### Downloading zcash-params
 
-Since v8.0 it's required to have `sapling-output.params` and `sapling-spend.params` files from
+Since v8.0 it's required to have the `sapling-output.params` and `sapling-spend.params` files from
 the `zcash-params` within the `XDG_DATA_DIRS` to run the `tezos-node`.
-We'll need these params to be accessed by different
-users (because systemd services are usually run as a separate user), thus the suggested way of getting
-them via `https://raw.githubusercontent.com/zcash/zcash/master/zcutil/fetch-params.sh` script which will
-download them to the `HOME` directory of the current user is not convenient. Moreover, it will
-download large `sprout-groth16.params` which is unused at the runtime.
+
+We'll need these params to be accessible by different
+users (because `systemd` services are usually run as a separate user), thus the suggested way of getting
+them via [the zcash script](https://raw.githubusercontent.com/zcash/zcash/master/zcutil/fetch-params.sh), which will
+download them to the `HOME` directory of the current user, is not convenient. Moreover, it will
+download the large `sprout-groth16.params` which is unused at the runtime.
 So, it's better to download them manually to the `/usr/local/share/zcash-params`, in order
 to do that run the following commands:
 ```
@@ -49,26 +51,29 @@ sudo wget https://gitlab.com/tezos/opam-repository/-/raw/v8.1/zcash-params/sapli
 
 ### Bootstrapping the node
 
-In order to run baker locally, you'll need fully-synced local `tezos-node`.
+In order to run a baker locally, you'll need a fully-synced local `tezos-node`.
+
 The easiest way to set up a node running on the `mainnet` or on one of the
 testnets (e.g. `delphinet` or `edonet`) is to use one of the predefined
 `tezos-node-<network>.services` systemd services provided in the `tezos-node`
 package. However, by default, these services will start to bootstrap the node
-from scratch, which will take significant amount of time. The fastest way to bootstrap
-the node is to import a snapshot. The snapshots can be downloaded from the https://snapshots.tulip.tools/#/ .
+from scratch, which will take significant amount of time.
+
+The fastest way to bootstrap the node is to import a snapshot.
+Snapshots can be downloaded from https://snapshots.tulip.tools/#/ .
 
 `tezos-node-<network>.service` has `/var/lib/tezos/node-<network>` as a data directory
-and `http://localhost:8732` as a an RPC address by default.
+and `http://localhost:8732` as its RPC address by default.
 These parameters can be changed in the service configuration, which is located in
 `/lib/systemd/system/tezos-node-<network>.service`. Note, that if you've updated the `.service`
 file, you should reload systemctl daemon via running `sudo systemctl daemon-reload`.
 
-All commands within the service are run under `tezos` user.
+All commands within the service are run under the `tezos` user.
 
-Download the snapshost for desired network and with desired history mode
+Download the snapshost for desired network and with the desired history mode
 (you can read more about `tezos-node` history modes [here](https://tezos.gitlab.io/user/history_modes.html#history-modes)).
 
-Snapshot import requires `tezos-node` data directory doesn't contain `context` and `store` folders.
+Snapshot import requires that the `tezos-node` data directory doesn't contain the `context` and `store` folders.
 Remove them before the snapshot import.
 
 In order to import the snapshot run the following command:
@@ -99,7 +104,7 @@ After the snapshot import, you can finally start the node by running
 sudo systemctl start tezos-node-<network>.service
 ```
 
-Note that even after the snapshot import node can still be out of sync, it may require
+Note that even after the snapshot import the node can still be out of sync, it may require
 some additional time to completely bootstrap.
 
 To stop the node run:
@@ -107,14 +112,14 @@ To stop the node run:
 sudo systemctl stop tezos-node-<network>.service
 ```
 
-You can check node logs via `journalctl`:
+You can check the node logs via `journalctl`:
 ```
 journalctl -u tezos-node-<network>.service
 ```
 
 ## Setting up baker and endorser daemons
 
-Once you have fully synced local `tezos-node`, you can start baker and endorser daemons.
+Once you have fully synced your local `tezos-node`, you can start the baker and endorser daemons.
 
 Data directories for baker and endorser daemons are defined in the
 `/etc/default/tezos-baker-<proto>` and `/etc/default/tezos-endorser-<proto>`. Make
@@ -128,14 +133,17 @@ Create the aformentioned daemons data directory:
 sudo -u tezos mkdir -p /var/lib/tezos/baker
 ```
 
-Import you baker secret key to the data directory. There are two ways to import
+Import your baker secret key to the data directory. There are two ways to import
 such key:
-1) You know either unencrypted or password-encrypted secret key for your address. In order
-to import such key run:
+1) You know either the unencrypted or password-encrypted secret key for your address.
+
+In order to import such key run:
 ```
 sudo -u tezos tezos-client -d /var/lib/tezos/baker import secret key <alias> <secret-key>
 ```
-2) Secret key is stored on ledger. Open Tezow Wallet app on your ledger and run the following
+2) The secret key is stored on a ledger.
+
+Open the Tezoz Wallet app on your ledger and run the following
 to import the key:
 ```
 sudo -u tezos tezos-client -d /var/lib/tezos/baker import secret key <alias> <ledger-url>
@@ -146,14 +154,14 @@ on your ledger and run the following:
 sudo -u tezos tezos-client -d /var/lib/tezos/baker setup ledger to bake for <alias>
 ```
 
-After importing the key, you'll need to update `BAKER_ACCOUNT` and `ENDORSER_ACCOUNT` in
-`/etc/default/tezos-baker-<proto>` and `/etc/default/tezos-endorser-<proto>` respectively with
-accordance to the alias of imported key.
+After importing the key, you'll need to update the `BAKER_ACCOUNT` and `ENDORSER_ACCOUNT` in
+`/etc/default/tezos-baker-<proto>` and `/etc/default/tezos-endorser-<proto>` respectively, in
+accordance to the alias of the imported key.
 
-Once the key is imported and the configs are updated, you can start baker and endorser daemons:
+Once the key is imported and the configs are updated, you can start the baker and endorser daemons:
 ```
 sudo systemctl start tezos-baker-<proto>.service
 sudo systemctl start tezos-endorser-<proto>.service
 ```
 
-Note that if you're baking with the ledger key, you should have Tezos Baking app open.
+Note that if you're baking with the ledger key, you should have the Tezos Baking app open.
