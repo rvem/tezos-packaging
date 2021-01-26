@@ -43,11 +43,11 @@ We'll need these params to be accessible by different
 users (because `systemd` services are usually run as a separate user), thus the suggested way of getting
 them via [the zcash script](https://raw.githubusercontent.com/zcash/zcash/master/zcutil/fetch-params.sh), which will
 download them to the `HOME` directory of the current user, is not convenient. Moreover, it will
-download the large `sprout-groth16.params` which is unused at the runtime.
+download the large `sprout-groth16.params` which is unused at runtime.
 So, it's better to download them to the `/usr/local/share/zcash-params`, the easiest way to do that
 is to run [`fetch-sapling-params.sh`](../scripts/fetch-sapling-params.sh) script:
 ```
-sudo ./fetch-salping-params.sh
+sudo ./fetch-sapling-params.sh
 ```
 
 Sudo is required because the files are downloaded to the `/usr/local/share/zcash-params`.
@@ -58,8 +58,11 @@ This script also checks that hashsums of the downloaded files match the expected
 The easiest way to set up a node running on the `mainnet` or on one of the
 testnets (e.g. `delphinet` or `edonet`) is to use one of the predefined
 `tezos-node-<network>.services` systemd services provided in the `tezos-node`
-package. However, by default, these services will start to bootstrap the node
-from scratch, which will take significant amount of time.
+package. 
+
+However, by default, these services will start to bootstrap the node from scratch,
+which will take a significant amount of time.
+In order to avoid this, here we suggest bootstrapping from a snapshot instead.
 
 ### Setting up node data directory
 
@@ -89,7 +92,7 @@ In order to import the snapshot run the following command:
 sudo -u tezos-node snapshot import --data-dir /var/lib/tezos/node-<network>/ <path to the snapshot file>
 ```
 
-In case you're getting the error similar to
+In case you're getting an error similar to
 ```
 tezos-node: Error:
               Invalid block BLjutMj47caB
