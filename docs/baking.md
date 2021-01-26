@@ -17,6 +17,11 @@ This article provides a step-by-step guide for setting up baking instance for Te
 In order to run a baking instance, you'll need the following Tezos binaries:
 `tezos-client`, `tezos-node`, `tezos-baker-<proto>`, `tezos-endorser-<proto>`.
 
+Currently used proto's are `007-PsDELPH1` (used on mainnet and delphinet) and
+`008-PtEdoTez` (used on edonet). Also, note that the corresponding ubuntu packages have protocol
+suffix in lowercase, e.g. list of available baker packages can be found
+[here](https://launchpad.net/~serokell/+archive/ubuntu/tezos/+packages?field.name_filter=tezos-baker&field.status_filter=published).
+
 To install them run the following commands:
 ```
 # Add PPA with Tezos binaries
@@ -39,19 +44,16 @@ users (because `systemd` services are usually run as a separate user), thus the 
 them via [the zcash script](https://raw.githubusercontent.com/zcash/zcash/master/zcutil/fetch-params.sh), which will
 download them to the `HOME` directory of the current user, is not convenient. Moreover, it will
 download the large `sprout-groth16.params` which is unused at the runtime.
-So, it's better to download them manually to the `/usr/local/share/zcash-params`, in order
-to do that run the following commands:
+So, it's better to download them to the `/usr/local/share/zcash-params`, the easiest way to do that
+is to run [`fetch-sapling-params.sh`](../scripts/fetch-sapling-params.sh) script:
 ```
-sudo mkdir -p /usr/local/share/zcash-params
-sudo wget https://gitlab.com/tezos/opam-repository/-/raw/v8.1/zcash-params/sapling-output.params -O /usr/local/share/zcash-params/sapling-output.params
-sudo wget https://gitlab.com/tezos/opam-repository/-/raw/v8.1/zcash-params/sapling-spend.params -O /usr/local/share/zcash-params/sapling-spend.params
+sudo ./fetch-salping-params.sh
 ```
+
+Sudo is required because the files are downloaded to the `/usr/local/share/zcash-params`.
+This script also checks that hashsums of the downloaded files match the expected values.
 
 ## Setting up the tezos-node
-
-### Bootstrapping the node
-
-In order to run a baker locally, you'll need a fully-synced local `tezos-node`.
 
 The easiest way to set up a node running on the `mainnet` or on one of the
 testnets (e.g. `delphinet` or `edonet`) is to use one of the predefined
@@ -59,14 +61,20 @@ testnets (e.g. `delphinet` or `edonet`) is to use one of the predefined
 package. However, by default, these services will start to bootstrap the node
 from scratch, which will take significant amount of time.
 
-The fastest way to bootstrap the node is to import a snapshot.
-Snapshots can be downloaded from https://snapshots.tulip.tools/#/ .
+### Setting up node data directory
 
 `tezos-node-<network>.service` has `/var/lib/tezos/node-<network>` as a data directory
 and `http://localhost:8732` as its RPC address by default.
 These parameters can be changed in the service configuration, which is located in
 `/lib/systemd/system/tezos-node-<network>.service`. Note, that if you've updated the `.service`
 file, you should reload systemctl daemon via running `sudo systemctl daemon-reload`.
+
+### Bootstrapping the node
+
+In order to run a baker locally, you'll need a fully-synced local `tezos-node`.
+
+The fastest way to bootstrap the node is to import a snapshot.
+Snapshots can be downloaded from https://snapshots.tulip.tools/#/ .
 
 All commands within the service are run under the `tezos` user.
 
@@ -90,7 +98,8 @@ tezos-node: Error:
 ```
 
 You should init/update config in the data directory to match the desired network
-before importing the snapshot. To do the run the following:
+before importing the snapshot. To do that run one of the following commands
+depending on whether the config in the given data directory was initialized previously:
 ```
 sudo -u tezos tezos-node config init --data-dir /var/lib/tezos/node-<network> --network <network>
 #or
@@ -121,6 +130,8 @@ journalctl -u tezos-node-<network>.service
 
 Once you have fully synced your local `tezos-node`, you can start the baker and endorser daemons.
 
+### Setting up daemons data directory
+
 Data directories for baker and endorser daemons are defined in the
 `/etc/default/tezos-baker-<proto>` and `/etc/default/tezos-endorser-<proto>`. Make
 sure to point them at the same directory to have the same set of known keys, e.g.
@@ -132,6 +143,8 @@ Create the aformentioned daemons data directory:
 ```
 sudo -u tezos mkdir -p /var/lib/tezos/baker
 ```
+
+### Importing baker key
 
 Import your baker secret key to the data directory. There are two ways to import
 such key:
@@ -157,6 +170,8 @@ sudo -u tezos tezos-client -d /var/lib/tezos/baker setup ledger to bake for <ali
 After importing the key, you'll need to update the `BAKER_ACCOUNT` and `ENDORSER_ACCOUNT` in
 `/etc/default/tezos-baker-<proto>` and `/etc/default/tezos-endorser-<proto>` respectively, in
 accordance to the alias of the imported key.
+
+### Starting daemons
 
 Once the key is imported and the configs are updated, you can start the baker and endorser daemons:
 ```
