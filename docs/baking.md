@@ -14,7 +14,7 @@ This article provides a step-by-step guide for setting up baking instance for Te
 
 ### Installing required packages
 
-In order to run baking instance, you'll need the following Tezos binaries:
+In order to run a baking instance, you'll need the following Tezos binaries:
 `tezos-client`, `tezos-node`, `tezos-baker-<proto>`, `tezos-endorser-<proto>`.
 
 To install them run the following commands:
