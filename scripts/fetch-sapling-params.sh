@@ -10,7 +10,7 @@
 # to `/usr/local/share`, it should be run with sudo.
 set -euo pipefail
 
-if [ "$EUID" -ne 0 ]; then 
+if [ "$EUID" -ne 0 ]; then
         echo "This script requires root privileges."
         echo "Please run it again with sudo or as root."
         exit 1
